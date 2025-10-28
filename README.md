@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black.svg)](https://github.com/alesierraalta/PRUEBATECNICA)
 
-Un microservicio de alto rendimiento y listo para producción para resumen inteligente de texto usando modelos de IA avanzados. Construido con FastAPI, incluye manejo integral de errores, caché, limitación de velocidad y mecanismos de respaldo automático.
+Un microservicio backend que recibe texto y devuelve un resumen generado por un modelo de lenguaje (LLM), priorizando latencia y confiabilidad según los requisitos del ejercicio.
 
 ## Tabla de Contenidos
 
@@ -15,17 +15,14 @@ Un microservicio de alto rendimiento y listo para producción para resumen intel
 - [Documentación de API](#documentación-de-api)
 - [Configuración](#configuración)
 - [Despliegue](#despliegue)
-- [Pruebas](#pruebas)
-- [Rendimiento](#rendimiento)
-- [Solución de Problemas](#solución-de-problemas)
+- [Latencia y Confiabilidad](#latencia-y-confiabilidad)
 
 ## Inicio Rápido
 
 ### Prerrequisitos
 
-- Python 3.11+
-- Docker & Docker Compose
-- Clave API de Google Gemini
+- **Docker & Docker Compose**
+- **Clave API de Google Gemini**
 
 ### Instalación
 
@@ -43,12 +40,12 @@ Un microservicio de alto rendimiento y listo para producción para resumen intel
 
 3. **Ejecutar con Docker Compose**
    ```bash
-   docker-compose up -d
+   docker-compose up --build -d
    ```
 
 4. **Acceder a la API**
    - API: http://localhost:8000
-   - Documentación: http://localhost:8000/docs
+   - Documentación OpenAPI: http://localhost:8000/docs
    - Verificación de Salud: http://localhost:8000/v1/healthz
 
 ### Uso Básico
@@ -66,14 +63,46 @@ curl -X POST "http://localhost:8000/v1/summarize" \
   }'
 ```
 
+### Claves API Disponibles
+
+Para usar la aplicación, utiliza una de estas claves API en el header `Authorization`:
+
+```bash
+# Clave de prueba 1
+Authorization: Bearer test_api_key_1
+
+# Clave de prueba 2  
+Authorization: Bearer test_api_key_2
+
+# Clave de desarrollo
+Authorization: Bearer dev_api_key_2024
+```
+
+**Nota**: Estas claves están configuradas en el archivo `.env` de ejemplo. Para producción, configura tus propias claves en la variable `API_KEYS_ALLOWED`.
+
+### Ejemplo Práctico
+
+```bash
+# Ejemplo usando una de las claves disponibles
+curl -X POST "http://localhost:8000/v1/summarize" \
+  -H "Authorization: Bearer test_api_key_1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "El cambio climático es uno de los desafíos más urgentes de nuestro tiempo. Los científicos han documentado un aumento constante en las temperaturas globales durante las últimas décadas, principalmente debido a las actividades humanas que liberan gases de efecto invernadero. Este fenómeno está causando cambios significativos en los patrones climáticos, incluyendo sequías más intensas, tormentas más frecuentes y el derretimiento de los casquetes polares. Las consecuencias del cambio climático ya son visibles en todo el mundo, afectando ecosistemas, economías y comunidades humanas. Para abordar este problema, se requieren acciones coordinadas a nivel global, incluyendo la reducción de emisiones de carbono, la transición a energías renovables y la implementación de políticas ambientales más estrictas.",
+    "lang": "es",
+    "max_tokens": 80,
+    "tone": "concise"
+  }'
+```
+
 ## Arquitectura
 
-El microservicio sigue un patrón de arquitectura en capas diseñado para alto rendimiento, confiabilidad y mantenibilidad. La arquitectura enfatiza la separación de responsabilidades, inyección de dependencias y manejo integral de errores.
+El microservicio implementa la arquitectura requerida: **Cliente → API (FastAPI) → LLM Provider** con fallback extractivo.
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Aplicación    │───▶│   API FastAPI   │───▶│  Proveedor LLM  │
-│     Cliente     │    │                 │    │                 │
+│     Cliente     │    │                 │    │   (Gemini)      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                 │                        │
                                 ▼                        ▼
@@ -86,19 +115,21 @@ El microservicio sigue un patrón de arquitectura en capas diseñado para alto r
                                 ▼
                        ┌─────────────────┐
                        │   Servicios     │
-                       │ (Cache, Eval)   │
+                       │ (Cache Redis)   │
                        └─────────────────┘
 ```
 
-### Componentes Clave
+### Componentes Principales
 
-- **Capa API**: Routers FastAPI con validación Pydantic
-- **Middleware**: Autenticación, limitación de velocidad, logging, CORS
-- **Servicios**: Caché (Redis), evaluación (ROUGE + similitud semántica)
-- **Proveedores**: LLM (Gemini), respaldo (TextRank)
-- **Infraestructura**: Docker, Nginx, monitoreo
+- **API**: Valida, autentica y llama al LLM
+- **Proveedor LLM**: Google Gemini (único, configurable)
+- **Fallback**: TextRank para resumen extractivo
+- **Caché**: Redis para reducir latencia
+- **Middleware**: Autenticación, rate limiting, logging JSON
 
 ## Documentación de API
+
+La documentación interactiva está disponible en `/docs` cuando el servicio está ejecutándose.
 
 ### Autenticación
 
@@ -112,7 +143,7 @@ Authorization: Bearer tu_clave_api_aqui
 
 #### POST /v1/summarize
 
-Resumir texto usando IA con manejo integral de errores y respaldo.
+Genera un resumen de texto usando LLM con fallback automático.
 
 **Solicitud:**
 ```json
@@ -135,21 +166,13 @@ Resumir texto usando IA con manejo integral de errores y respaldo.
   },
   "model": "gemini-pro",
   "latency_ms": 1250,
-  "evaluation": {
-    "rouge_1_f": 0.75,
-    "rouge_2_f": 0.65,
-    "rouge_l_f": 0.70,
-    "semantic_similarity": 0.85,
-    "compression_ratio": 0.20,
-    "quality_score": 0.78
-  },
   "cached": false
 }
 ```
 
 #### GET /v1/healthz
 
-Verificación integral de salud para todos los componentes del servicio.
+Revisión del estado del servicio y conectividad al LLM.
 
 **Respuesta:**
 ```json
@@ -159,276 +182,160 @@ Verificación integral de salud para todos los componentes del servicio.
   "services": {
     "llm_provider": {
       "status": "healthy",
-      "response_time_ms": 150,
-      "details": {"model": "gemini-pro"}
+      "response_time_ms": 150
     },
     "redis": {
       "status": "healthy",
-      "response_time_ms": 5,
-      "details": {"connected_clients": 10}
+      "response_time_ms": 5
     }
-  },
-  "version": "1.0.0",
-  "uptime_seconds": 86400.0
+  }
 }
 ```
 
 ### Manejo de Errores
 
-La API devuelve respuestas de error consistentes:
+Respuestas de error consistentes con códigos HTTP estándar:
 
-```json
-{
-  "error": "tipo_error",
-  "message": "Mensaje de error bilingüe / Bilingual error message",
-  "timestamp": 1640995200.123,
-  "request_id": "uuid-aqui"
-}
-```
-
-**Códigos de Estado:**
 - `200` - Éxito
-- `400` - Solicitud Incorrecta (error de validación)
+- `400` - Solicitud Incorrecta (validación fallida)
 - `401` - No Autorizado (clave API inválida)
-- `429` - Demasiadas Solicitudes (límite de velocidad excedido)
-- `503` - Servicio No Disponible (proveedor LLM caído)
+- `429` - Demasiadas Solicitudes (rate limit excedido)
+- `503` - Servicio No Disponible (LLM caído)
 
 ## Configuración
 
-### Variables de Entorno
+### Variables de Entorno Principales
 
 | Variable | Descripción | Predeterminado | Requerido |
 |----------|-------------|----------------|-----------|
 | `API_KEYS_ALLOWED` | Claves API separadas por comas | - | Sí |
 | `GEMINI_API_KEY` | Clave API de Google Gemini | - | Sí |
-| `REDIS_URL` | URL de conexión Redis | `redis://localhost:6379/0` | No |
-| `ENABLE_RATE_LIMIT` | Habilitar limitación de velocidad | `true` | No |
-| `ENABLE_AUTO_EVALUATION` | Habilitar evaluación de calidad | `true` | No |
-| `LOG_LEVEL` | Nivel de logging | `INFO` | No |
+| `LLM_PROVIDER` | Proveedor LLM | `gemini` | No |
 | `SUMMARY_MAX_TOKENS` | Máximo de tokens predeterminado | `100` | No |
+| `LANG_DEFAULT` | Idioma predeterminado | `auto` | No |
 | `REQUEST_TIMEOUT_MS` | Timeout de solicitud | `10000` | No |
+| `ENABLE_RATE_LIMIT` | Habilitar rate limiting | `true` | No |
+| `REDIS_URL` | URL de Redis (opcional) | `redis://localhost:6379/0` | No |
 
-### Configuración Completa
+### Ejemplo de archivo `.env`
 
 ```bash
-# Aplicación
-ENVIRONMENT=production
-LOG_LEVEL=INFO
-WORKERS=4
+# API Keys
+API_KEYS_ALLOWED="tu_clave_api_1,tu_clave_api_2"
 
-# API
-API_KEYS_ALLOWED=clave1,clave2,clave3
-API_TITLE=API de Resumen LLM
-API_VERSION=1.0.0
+# LLM Provider
+LLM_PROVIDER="gemini"
+GEMINI_API_KEY="tu_clave_gemini_api"
 
-# Proveedor LLM
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=tu_clave_gemini_api
-GEMINI_MODEL=gemini-pro
+# Configuración
+SUMMARY_MAX_TOKENS=100
+LANG_DEFAULT="auto"
+REQUEST_TIMEOUT_MS=10000
 
-# Características
+# Características opcionales
 ENABLE_RATE_LIMIT=true
-ENABLE_AUTO_EVALUATION=true
-EVALUATION_MODEL=all-MiniLM-L6-v2
-
-# Caché
-REDIS_URL=redis://localhost:6379/0
-CACHE_TTL_SECONDS=3600
-
-# CORS
-CORS_ORIGINS=https://tudominio.com
+REDIS_URL="redis://redis:6379/0"
+LOG_LEVEL="INFO"
 ```
 
 ## Despliegue
 
 ### Docker Compose (Recomendado)
 
-1. **Despliegue de producción**
-   ```bash
-   # Copiar entorno de producción
-   cp env.production .env.production
-   
-   # Desplegar con monitoreo
-   docker-compose -f docker-compose.prod.yml --profile monitoring up -d
-   ```
-
-2. **Despliegue de desarrollo**
-   ```bash
-   docker-compose up -d
-   ```
-
-### Construcción Manual de Docker
-
 ```bash
-# Construir imagen
-./scripts/docker-build.sh 1.0.0
+# Despliegue completo
+docker-compose up --build -d
 
-# Desplegar
-./scripts/docker-deploy.sh deploy
-```
+# Verificar estado
+docker-compose ps
 
-### Configuraciones Específicas por Entorno
-
-- **Desarrollo**: `docker-compose.yml`
-- **Producción**: `docker-compose.prod.yml`
-- **Pruebas**: `docker-compose.test.yml`
-
-## Pruebas
-
-### Ejecutar Pruebas
-
-```bash
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Ejecutar todas las pruebas
-pytest
-
-# Ejecutar con cobertura
-pytest --cov=app --cov-report=html
-
-# Ejecutar tipos específicos de pruebas
-pytest -m unit          # Solo pruebas unitarias
-pytest -m integration   # Solo pruebas de integración
-pytest -m slow          # Solo pruebas lentas
-```
-
-### Estructura de Pruebas
-
-```
-tests/
-├── conftest.py              # Fixtures globales
-├── fixtures/
-│   └── test_data.py         # Datos de prueba
-├── unit/
-│   ├── test_config.py       # Pruebas de configuración
-│   ├── test_schemas.py      # Pruebas de esquemas
-│   └── test_*.py           # Otras pruebas unitarias
-└── integration/
-    └── test_api.py          # Pruebas de integración de API
-```
-
-### Cobertura de Pruebas
-
-El proyecto mantiene cobertura de pruebas del 80%+ en:
-- Pruebas unitarias para todos los componentes
-- Pruebas de integración para endpoints de API
-- Escenarios de manejo de errores
-- Características de rendimiento
-
-## Rendimiento
-
-### Puntos de Referencia
-
-| Métrica | Valor |
-|---------|-------|
-| **Latencia** | < 2s (percentil 95) |
-| **Rendimiento** | 100+ solicitudes/minuto |
-| **Uso de Memoria** | < 512MB por instancia |
-| **Tasa de Acierto de Caché** | > 80% |
-| **Tiempo de Actividad** | 99.9% |
-
-### Características de Optimización
-
-- **Caché Redis**: Caché inteligente con TTL
-- **Pool de Conexiones**: Conexiones de base de datos optimizadas
-- **Procesamiento Asíncrono**: Operaciones I/O no bloqueantes
-- **Límites de Recursos**: Restricciones de recursos Docker
-- **Balanceamiento de Carga**: Proxy reverso Nginx
-
-### Monitoreo
-
-- **Verificaciones de Salud**: Monitoreo automatizado de servicios
-- **Métricas**: Integración con Prometheus
-- **Logging**: Logging JSON estructurado
-- **Alertas**: Dashboards de Grafana
-
-## Solución de Problemas
-
-### Problemas Comunes
-
-#### 1. Fallo de Autenticación de Clave API
-
-**Error**: `401 No Autorizado`
-
-**Solución**:
-```bash
-# Verificar formato de clave API
-curl -H "Authorization: Bearer tu_clave_api" http://localhost:8000/v1/healthz
-
-# Verificar clave API en entorno
-echo $API_KEYS_ALLOWED
-```
-
-#### 2. Límite de Velocidad Excedido
-
-**Error**: `429 Demasiadas Solicitudes`
-
-**Solución**:
-```bash
-# Verificar headers de límite de velocidad
-curl -I -H "Authorization: Bearer tu_clave_api" http://localhost:8000/v1/summarize
-
-# Ajustar límites de velocidad en configuración
-ENABLE_RATE_LIMIT=false  # Deshabilitar para pruebas
-```
-
-#### 3. Proveedor LLM No Disponible
-
-**Error**: `503 Servicio No Disponible`
-
-**Solución**:
-```bash
-# Verificar clave API de Gemini
-curl -H "Authorization: Bearer $GEMINI_API_KEY" https://generativelanguage.googleapis.com/v1/models
-
-# Verificar que el respaldo esté funcionando
-# El servicio automáticamente recurre a TextRank
-```
-
-#### 4. Fallo de Conexión Redis
-
-**Error**: Operaciones de caché fallando
-
-**Solución**:
-```bash
-# Verificar conexión Redis
-docker-compose exec redis redis-cli ping
-
-# Verificar URL de Redis
-echo $REDIS_URL
-```
-
-### Modo Debug
-
-Habilitar logging de debug:
-
-```bash
-LOG_LEVEL=DEBUG docker-compose up
-```
-
-### Logs
-
-Ver logs del servicio:
-
-```bash
-# Todos los servicios
+# Ver logs
 docker-compose logs -f
-
-# Servicio específico
-docker-compose logs -f api
-
-# Con marcas de tiempo
-docker-compose logs -f -t api
 ```
 
-## 📞 Soporte
+### Comandos Útiles
 
-- **Documentación**: [docs/](docs/)
+```bash
+# Detener servicios
+docker-compose down
+
+# Reiniciar servicios
+docker-compose restart
+
+# Reconstruir imágenes
+docker-compose up --build
+```
+
+## Latencia y Confiabilidad
+
+Este microservicio está diseñado para cumplir con los objetivos de **baja latencia** y **alta confiabilidad** requeridos en el ejercicio.
+
+### Optimizaciones para Latencia
+
+**1. Caché Inteligente con Redis**
+- Almacena respuestas de resumen para textos idénticos
+- Reduce latencia de ~2000ms a ~50ms para solicitudes repetidas
+- Tasa de acierto objetivo: >80%
+
+**2. Procesamiento Asíncrono**
+- FastAPI con `async/await` para operaciones no bloqueantes
+- Pool de conexiones HTTP para minimizar overhead
+- Procesamiento concurrente de múltiples solicitudes
+
+**3. Optimización de LLM**
+- Timeout configurable (8s por defecto) para evitar esperas largas
+- Retry automático con backoff exponencial (hasta 2 reintentos)
+- Fallback extractivo (TextRank) si el LLM falla
+
+### Mecanismos de Confiabilidad
+
+**1. Fallback Automático**
+- Si Google Gemini falla → TextRank (resumen extractivo)
+- Si Redis falla → servicio continúa sin caché
+- Timeouts: cliente 10s, LLM 8s
+
+**2. Manejo Robusto de Errores**
+- Retry automático en errores 429/5xx (hasta 2 reintentos)
+- Logs JSON estructurados para debugging
+- Health checks integrales en `/v1/healthz`
+
+**3. Rate Limiting y Seguridad**
+- Limitación de velocidad por API key (opcional con Redis)
+- Validación estricta de entrada (≤50k caracteres)
+- Autenticación obligatoria con API Key
+- Headers de seguridad automáticos
+
+### Métricas Objetivo
+
+| Métrica | Objetivo | Implementación |
+|---------|----------|-----------------|
+| **Latencia P95** | < 2000ms | Caché Redis + async |
+| **Disponibilidad** | > 99% | Fallback automático |
+| **Tasa de Éxito** | > 95% | Retry + fallback |
+| **Memoria** | < 512MB | Optimización de modelos |
+
+### Arquitectura de Resiliencia
+
+```
+Cliente → API Gateway → FastAPI → LLM Provider
+                ↓              ↓
+            Rate Limit    Fallback (TextRank)
+                ↓              ↓
+            Redis Cache ← Evaluación Opcional
+```
+
+**Flujo de Recuperación:**
+1. **LLM falla** → Retry automático (2x)
+2. **Retry falla** → TextRank como fallback
+3. **Redis falla** → Servicio continúa sin caché
+4. **Rate limit** → Respuesta 429 con headers informativos
+
+## Soporte
+
+- **Documentación API**: http://localhost:8000/docs
 - **Issues**: [GitHub Issues](https://github.com/alesierraalta/PRUEBATECNICA/issues)
-- **Discusiones**: [GitHub Discussions](https://github.com/alesierraalta/PRUEBATECNICA/discussions)
 - **Repositorio**: [GitHub Repository](https://github.com/alesierraalta/PRUEBATECNICA)
 
 ---
 
-**Hecho con ❤️ para resumen inteligente de texto**
+**Microservicio de Resumen LLM - Prueba Técnica**

@@ -18,8 +18,8 @@ El Microservicio de Resumen LLM está diseñado con una arquitectura en capas qu
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Capa de Infraestructura                      │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
-│  │   Nginx     │  │   Docker    │  │  Kubernetes │            │
-│  │ (Proxy Rev) │  │ (Container) │  │ (Orquest.)  │            │
+│  │   Nginx     │  │   Docker    │  │   Scripts   │            │
+│  │ (Proxy Rev) │  │ (Container) │  │(Automatiz.) │            │
 │  └─────────────┘  └─────────────┘  └─────────────┘            │
 └─────────────────────────────────────────────────────────────────┘
                                 │
@@ -374,7 +374,7 @@ services:
 - Nginx con compresión gzip
 - Redis con persistencia optimizada
 - Docker con multi-stage builds
-- Kubernetes con HPA
+- Scripts de automatización para escalado
 
 ### Benchmarks
 
@@ -383,33 +383,6 @@ services:
 - Rendimiento: 100+ RPS
 - Uso de memoria: < 512MB por instancia
 - Tasa de acierto de caché: > 80%
-
-## Evolución de la Arquitectura
-
-### Roadmap Técnico
-
-**Fase 1 (Actual):**
-- Arquitectura monolítica modular
-- Docker Compose
-- Redis como caché
-
-**Fase 2 (Próxima):**
-- Microservicios separados
-- Kubernetes
-- Service mesh
-
-**Fase 3 (Futuro):**
-- Serverless functions
-- Event-driven architecture
-- Multi-cloud deployment
-
-### Consideraciones de Migración
-
-**Estrategias:**
-- Migración gradual por componentes
-- Mantenimiento de compatibilidad de API
-- Testing exhaustivo en cada fase
-- Rollback automático
 
 ## Decisiones Arquitectónicas
 
