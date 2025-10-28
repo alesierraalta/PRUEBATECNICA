@@ -8,32 +8,18 @@
 
 Un microservicio de alto rendimiento y listo para producción para resumen inteligente de texto usando modelos de IA avanzados. Construido con FastAPI, incluye manejo integral de errores, caché, limitación de velocidad y mecanismos de respaldo automático.
 
-## 🚀 Características
+## Tabla de Contenidos
 
-- **🤖 Resumen con IA**: Integración con Google Gemini con respaldo inteligente
-- **⚡ Alto Rendimiento**: Caché Redis y procesamiento optimizado
-- **🛡️ Listo para Producción**: Manejo integral de errores y resiliencia
-- **🔒 Seguro**: Autenticación con clave API y limitación de velocidad
-- **📊 Evaluación de Calidad**: Puntuaciones ROUGE automáticas y similitud semántica
-- **🌍 Multiidioma**: Soporte para múltiples idiomas con detección automática
-- **📈 Monitoreo**: Verificaciones de salud y logging integral
-- **🐳 Containerizado**: Listo para Docker y Docker Compose
-- **🧪 Probado**: Suite de pruebas integral con cobertura del 80%+
+- [Inicio Rápido](#inicio-rápido)
+- [Arquitectura](#arquitectura)
+- [Documentación de API](#documentación-de-api)
+- [Configuración](#configuración)
+- [Despliegue](#despliegue)
+- [Pruebas](#pruebas)
+- [Rendimiento](#rendimiento)
+- [Solución de Problemas](#solución-de-problemas)
 
-## 📋 Tabla de Contenidos
-
-- [Inicio Rápido](#-inicio-rápido)
-- [Arquitectura](#-arquitectura)
-- [Documentación de API](#-documentación-de-api)
-- [Configuración](#-configuración)
-- [Despliegue](#-despliegue)
-- [Pruebas](#-pruebas)
-- [Rendimiento](#-rendimiento)
-- [Solución de Problemas](#-solución-de-problemas)
-- [Contribución](#-contribución)
-- [Licencia](#-licencia)
-
-## 🚀 Inicio Rápido
+## Inicio Rápido
 
 ### Prerrequisitos
 
@@ -80,7 +66,7 @@ curl -X POST "http://localhost:8000/v1/summarize" \
   }'
 ```
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 El microservicio sigue un patrón de arquitectura en capas diseñado para alto rendimiento, confiabilidad y mantenibilidad. La arquitectura enfatiza la separación de responsabilidades, inyección de dependencias y manejo integral de errores.
 
@@ -112,7 +98,7 @@ El microservicio sigue un patrón de arquitectura en capas diseñado para alto r
 - **Proveedores**: LLM (Gemini), respaldo (TextRank)
 - **Infraestructura**: Docker, Nginx, monitoreo
 
-## 📚 Documentación de API
+## Documentación de API
 
 ### Autenticación
 
@@ -207,7 +193,7 @@ La API devuelve respuestas de error consistentes:
 - `429` - Demasiadas Solicitudes (límite de velocidad excedido)
 - `503` - Servicio No Disponible (proveedor LLM caído)
 
-## ⚙️ Configuración
+## Configuración
 
 ### Variables de Entorno
 
@@ -253,7 +239,7 @@ CACHE_TTL_SECONDS=3600
 CORS_ORIGINS=https://tudominio.com
 ```
 
-## 🚀 Despliegue
+## Despliegue
 
 ### Docker Compose (Recomendado)
 
@@ -281,43 +267,13 @@ CORS_ORIGINS=https://tudominio.com
 ./scripts/docker-deploy.sh deploy
 ```
 
-### Kubernetes (Avanzado)
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: llm-resumen-api
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: llm-resumen-api
-  template:
-    metadata:
-      labels:
-        app: llm-resumen-api
-    spec:
-      containers:
-      - name: api
-        image: llm-resumen-api:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: GEMINI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: api-secrets
-              key: gemini-api-key
-```
-
 ### Configuraciones Específicas por Entorno
 
 - **Desarrollo**: `docker-compose.yml`
 - **Producción**: `docker-compose.prod.yml`
 - **Pruebas**: `docker-compose.test.yml`
 
-## 🧪 Pruebas
+## Pruebas
 
 ### Ejecutar Pruebas
 
@@ -360,7 +316,7 @@ El proyecto mantiene cobertura de pruebas del 80%+ en:
 - Escenarios de manejo de errores
 - Características de rendimiento
 
-## 📊 Rendimiento
+## Rendimiento
 
 ### Puntos de Referencia
 
@@ -387,7 +343,7 @@ El proyecto mantiene cobertura de pruebas del 80%+ en:
 - **Logging**: Logging JSON estructurado
 - **Alertas**: Dashboards de Grafana
 
-## 🔧 Solución de Problemas
+## Solución de Problemas
 
 ### Problemas Comunes
 
@@ -465,60 +421,3 @@ docker-compose logs -f api
 # Con marcas de tiempo
 docker-compose logs -f -t api
 ```
-
-## 🤝 Contribución
-
-¡Agradecemos las contribuciones! Por favor consulta nuestra [Guía de Contribución](CONTRIBUTING.md) para detalles.
-
-### Configuración de Desarrollo
-
-1. **Hacer fork del repositorio**
-2. **Crear una rama de característica**
-   ```bash
-   git checkout -b feature/caracteristica-increible
-   ```
-3. **Instalar dependencias de desarrollo**
-   ```bash
-   pip install -r requirements-dev.txt
-   ```
-4. **Ejecutar pruebas**
-   ```bash
-   pytest
-   ```
-5. **Confirmar cambios**
-   ```bash
-   git commit -m "Agregar característica increíble"
-   ```
-6. **Enviar a la rama**
-   ```bash
-   git push origin feature/caracteristica-increible
-   ```
-7. **Abrir un Pull Request**
-
-### Estilo de Código
-
-- **Python**: Formato Black, type hints
-- **Documentación**: Docstrings estilo Google
-- **Pruebas**: pytest con cobertura del 80%+
-- **Commits**: Mensajes de commit convencionales
-
-## 📄 Licencia
-
-Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo [LICENSE](LICENSE) para detalles.
-
-## 🙏 Agradecimientos
-
-- [FastAPI](https://fastapi.tiangolo.com/) - Framework web moderno
-- [Google Gemini](https://ai.google.dev/) - Modelo de lenguaje IA
-- [Redis](https://redis.io/) - Almacén de datos en memoria
-- [Docker](https://docker.com/) - Plataforma de containerización
-
-## 📞 Soporte
-
-- **Documentación**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/tuusuario/microservicio-resumen-llm/issues)
-- **Discusiones**: [GitHub Discussions](https://github.com/tuusuario/microservicio-resumen-llm/discussions)
-
----
-
-**Hecho con ❤️ para resumen inteligente de texto**

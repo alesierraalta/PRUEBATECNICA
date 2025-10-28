@@ -208,563 +208,299 @@ server {
 }
 ```
 
-## Despliegue en la Nube
+## Despliegue en Servidores
 
-### AWS (Amazon Web Services)
+### Despliegue en Servidor VPS
 
-#### Opción 1: ECS con Fargate
+Para desplegar en un servidor VPS (DigitalOcean, Linode, AWS EC2, etc.):
 
-1. **Crear repositorio ECR**
+1. **Preparar servidor**
    ```bash
-   aws ecr create-repository --repository-name llm-resumen-api
+   # Actualizar sistema
+   sudo apt update && sudo apt upgrade -y
+   
+   # Instalar Docker
+   curl -fsSL https://get.docker.com -o get-docker.sh
+   sudo sh get-docker.sh
+   
+   # Instalar Docker Compose
+   sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+   sudo chmod +x /usr/local/bin/docker-compose
    ```
 
-2. **Construir y subir imagen**
+2. **Clonar y configurar**
    ```bash
-   # Obtener token de login
-   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789012.dkr.ecr.us-east-1.amazonaws.com
+   git clone https://github.com/tuusuario/microservicio-resumen-llm.git
+   cd microservicio-resumen-llm
    
-   # Construir imagen
-   docker build -t llm-resumen-api .
-   
-   # Etiquetar imagen
-   docker tag llm-resumen-api:latest 123456789012.dkr.ecr.us-east-1.amazonaws.com/llm-resumen-api:latest
-   
-   # Subir imagen
-   docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/llm-resumen-api:latest
+   # Configurar variables de entorno
+   cp env.production .env.production
+   nano .env.production  # Editar con tus valores
    ```
 
-3. **Configurar ECS Task Definition**
-   ```json
-   {
-     "family": "llm-resumen-api",
-     "networkMode": "awsvpc",
-     "requiresCompatibilities": ["FARGATE"],
-     "cpu": "512",
-     "memory": "1024",
-     "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole",
-     "containerDefinitions": [
-       {
-         "name": "api",
-         "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/llm-resumen-api:latest",
-         "portMappings": [
-           {
-             "containerPort": 8000,
-             "protocol": "tcp"
-           }
-         ],
-         "environment": [
-           {
-             "name": "ENVIRONMENT",
-             "value": "production"
-           }
-         ],
-         "secrets": [
-           {
-             "name": "GEMINI_API_KEY",
-             "valueFrom": "arn:aws:secretsmanager:us-east-1:123456789012:secret:llm-resumen/gemini-api-key"
-           }
-         ],
-         "logConfiguration": {
-           "logDriver": "awslogs",
-           "options": {
-             "awslogs-group": "/ecs/llm-resumen-api",
-             "awslogs-region": "us-east-1",
-             "awslogs-stream-prefix": "ecs"
-           }
-         }
+3. **Desplegar**
+   ```bash
+   # Desplegar con Docker Compose
+   docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+   
+   # Verificar estado
+   docker-compose -f docker-compose.prod.yml ps
+   ```
+
+### Despliegue con Nginx
+
+Para usar Nginx como proxy reverso:
+
+1. **Instalar Nginx**
+   ```bash
+   sudo apt install nginx
+   ```
+
+2. **Configurar sitio**
+   ```bash
+   sudo nano /etc/nginx/sites-available/llm-resumen
+   ```
+
+3. **Contenido de configuración**
+   ```nginx
+   server {
+       listen 80;
+       server_name tu-dominio.com;
+       
+       location / {
+           proxy_pass http://localhost:8000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
        }
-     ]
    }
    ```
 
-#### Opción 2: EKS (Elastic Kubernetes Service)
-
-1. **Crear cluster EKS**
+4. **Activar sitio**
    ```bash
-   eksctl create cluster --name llm-resumen-cluster --region us-east-1 --nodegroup-name workers --node-type t3.medium --nodes 3
+   sudo ln -s /etc/nginx/sites-available/llm-resumen /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl reload nginx
    ```
 
-2. **Aplicar manifiestos Kubernetes**
-   ```bash
-   kubectl apply -f k8s/
-   ```
+## Automatización de Despliegue
 
-### Google Cloud Platform (GCP)
+### Script de Despliegue Simple
 
-#### Cloud Run
-
-1. **Construir imagen**
-   ```bash
-   gcloud builds submit --tag gcr.io/tu-proyecto/llm-resumen-api
-   ```
-
-2. **Desplegar en Cloud Run**
-   ```bash
-   gcloud run deploy llm-resumen-api \
-     --image gcr.io/tu-proyecto/llm-resumen-api \
-     --platform managed \
-     --region us-central1 \
-     --allow-unauthenticated \
-     --set-env-vars ENVIRONMENT=production \
-     --set-secrets GEMINI_API_KEY=gemini-api-key:latest
-   ```
-
-#### Google Kubernetes Engine (GKE)
-
-1. **Crear cluster GKE**
-   ```bash
-   gcloud container clusters create llm-resumen-cluster \
-     --zone us-central1-a \
-     --num-nodes 3 \
-     --machine-type e2-medium
-   ```
-
-2. **Desplegar aplicación**
-   ```bash
-   kubectl apply -f k8s/
-   ```
-
-### Microsoft Azure
-
-#### Azure Container Instances (ACI)
-
-1. **Crear grupo de contenedores**
-   ```bash
-   az container create \
-     --resource-group mi-grupo-recursos \
-     --name llm-resumen-api \
-     --image tu-registro.azurecr.io/llm-resumen-api:latest \
-     --cpu 1 \
-     --memory 2 \
-     --ports 8000 \
-     --environment-variables ENVIRONMENT=production \
-     --secure-environment-variables GEMINI_API_KEY=tu_clave_api
-   ```
-
-#### Azure Kubernetes Service (AKS)
-
-1. **Crear cluster AKS**
-   ```bash
-   az aks create \
-     --resource-group mi-grupo-recursos \
-     --name llm-resumen-cluster \
-     --node-count 3 \
-     --node-vm-size Standard_B2s \
-     --enable-addons monitoring
-   ```
-
-2. **Desplegar aplicación**
-   ```bash
-   kubectl apply -f k8s/
-   ```
-
-## Despliegue con Kubernetes
-
-### Manifiestos Kubernetes
-
-#### Namespace
-```yaml
-# k8s/namespace.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: llm-resumen
-```
-
-#### ConfigMap
-```yaml
-# k8s/configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: llm-resumen-config
-  namespace: llm-resumen
-data:
-  ENVIRONMENT: "production"
-  LOG_LEVEL: "INFO"
-  WORKERS: "4"
-  SUMMARY_MAX_TOKENS: "100"
-  CACHE_TTL_SECONDS: "3600"
-  RATE_LIMIT_PER_MINUTE: "100"
-```
-
-#### Secret
-```yaml
-# k8s/secret.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: llm-resumen-secrets
-  namespace: llm-resumen
-type: Opaque
-data:
-  gemini-api-key: <base64-encoded-key>
-  api-keys-allowed: <base64-encoded-keys>
-```
-
-#### Deployment
-```yaml
-# k8s/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: llm-resumen-api
-  namespace: llm-resumen
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: llm-resumen-api
-  template:
-    metadata:
-      labels:
-        app: llm-resumen-api
-    spec:
-      containers:
-      - name: api
-        image: llm-resumen-api:latest
-        ports:
-        - containerPort: 8000
-        envFrom:
-        - configMapRef:
-            name: llm-resumen-config
-        - secretRef:
-            name: llm-resumen-secrets
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /v1/healthz
-            port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /v1/healthz
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-```
-
-#### Service
-```yaml
-# k8s/service.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: llm-resumen-service
-  namespace: llm-resumen
-spec:
-  selector:
-    app: llm-resumen-api
-  ports:
-  - port: 80
-    targetPort: 8000
-  type: ClusterIP
-```
-
-#### Ingress
-```yaml
-# k8s/ingress.yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: llm-resumen-ingress
-  namespace: llm-resumen
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-spec:
-  tls:
-  - hosts:
-    - api.tu-dominio.com
-    secretName: llm-resumen-tls
-  rules:
-  - host: api.tu-dominio.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: llm-resumen-service
-            port:
-              number: 80
-```
-
-### Comandos de Despliegue
+Crear un script para automatizar el despliegue:
 
 ```bash
-# Aplicar todos los manifiestos
-kubectl apply -f k8s/
+#!/bin/bash
+# scripts/deploy.sh
 
-# Verificar despliegue
-kubectl get pods -n llm-resumen
+set -e
 
-# Ver logs
-kubectl logs -f deployment/llm-resumen-api -n llm-resumen
+echo "🚀 Iniciando despliegue..."
 
-# Escalar deployment
-kubectl scale deployment llm-resumen-api --replicas=5 -n llm-resumen
+# Verificar que Docker esté ejecutándose
+if ! docker info > /dev/null 2>&1; then
+    echo "❌ Docker no está ejecutándose"
+    exit 1
+fi
 
-# Actualizar imagen
-kubectl set image deployment/llm-resumen-api api=llm-resumen-api:v2.0.0 -n llm-resumen
+# Construir imagen
+echo "📦 Construyendo imagen Docker..."
+docker-compose -f docker-compose.prod.yml build
+
+# Detener servicios existentes
+echo "🛑 Deteniendo servicios existentes..."
+docker-compose -f docker-compose.prod.yml down
+
+# Iniciar servicios
+echo "▶️ Iniciando servicios..."
+docker-compose -f docker-compose.prod.yml up -d
+
+# Verificar salud
+echo "🏥 Verificando salud del servicio..."
+sleep 10
+if curl -f http://localhost:8000/v1/healthz > /dev/null 2>&1; then
+    echo "✅ Servicio desplegado correctamente"
+else
+    echo "❌ Error en el despliegue"
+    docker-compose -f docker-compose.prod.yml logs
+    exit 1
+fi
+
+echo "🎉 Despliegue completado exitosamente"
 ```
 
-## CI/CD Pipeline
+### GitHub Actions Básico
 
-### GitHub Actions
+Para automatizar despliegues con GitHub Actions:
 
 ```yaml
 # .github/workflows/deploy.yml
-name: Despliegue
+name: Despliegue Automático
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Configurar Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Instalar dependencias
-      run: |
-        pip install -r requirements.txt
-    
-    - name: Ejecutar pruebas
-      run: |
-        pytest --cov=app --cov-report=xml
-    
-    - name: Subir cobertura
-      uses: codecov/codecov-action@v3
-
-  build-and-deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     
     steps:
     - uses: actions/checkout@v3
     
-    - name: Construir imagen Docker
+    - name: Configurar Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Construir imagen
       run: |
         docker build -t llm-resumen-api:${{ github.sha }} .
     
-    - name: Subir a ECR
+    - name: Desplegar en servidor
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: us-east-1
+        SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        SERVER_USER: ${{ secrets.SERVER_USER }}
+        SERVER_KEY: ${{ secrets.SERVER_KEY }}
       run: |
-        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
-        docker tag llm-resumen-api:${{ github.sha }} $ECR_REGISTRY/llm-resumen-api:${{ github.sha }}
-        docker push $ECR_REGISTRY/llm-resumen-api:${{ github.sha }}
-    
-    - name: Desplegar en ECS
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGION: us-east-1
-      run: |
-        aws ecs update-service --cluster llm-resumen-cluster --service llm-resumen-service --force-new-deployment
+        # Copiar archivos al servidor
+        scp -i $SERVER_KEY docker-compose.prod.yml $SERVER_USER@$SERVER_HOST:/app/
+        scp -i $SERVER_KEY .env.production $SERVER_USER@$SERVER_HOST:/app/
+        
+        # Ejecutar despliegue en servidor
+        ssh -i $SERVER_KEY $SERVER_USER@$SERVER_HOST "
+          cd /app &&
+          docker-compose -f docker-compose.prod.yml pull &&
+          docker-compose -f docker-compose.prod.yml up -d
+        "
 ```
 
-### GitLab CI/CD
+## Monitoreo Básico
 
-```yaml
-# .gitlab-ci.yml
-stages:
-  - test
-  - build
-  - deploy
+### Verificación de Salud
 
-variables:
-  DOCKER_DRIVER: overlay2
-  DOCKER_TLS_CERT_DIR: "/certs"
+El servicio incluye un endpoint de salud que puedes usar para monitoreo básico:
 
-test:
-  stage: test
-  image: python:3.11
-  before_script:
-    - pip install -r requirements.txt
-  script:
-    - pytest --cov=app --cov-report=xml
-  coverage: '/TOTAL.*\s+(\d+%)$/'
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
+```bash
+# Verificar salud del servicio
+curl http://localhost:8000/v1/healthz
 
-build:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
-  script:
-    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-  only:
-    - main
-
-deploy:
-  stage: deploy
-  image: bitnami/kubectl:latest
-  script:
-    - kubectl set image deployment/llm-resumen-api api=$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-  only:
-    - main
-  when: manual
-```
-
-## Monitoreo y Observabilidad
-
-### Prometheus y Grafana
-
-#### Configuración de Prometheus
-
-```yaml
-# monitoring/prometheus.yml
-global:
-  scrape_interval: 15s
-
-scrape_configs:
-  - job_name: 'llm-resumen-api'
-    static_configs:
-      - targets: ['api:8000']
-    metrics_path: /metrics
-    scrape_interval: 5s
-```
-
-#### Dashboard de Grafana
-
-```json
+# Respuesta esperada
 {
-  "dashboard": {
-    "title": "LLM Resumen API",
-    "panels": [
-      {
-        "title": "Solicitudes por Segundo",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(http_requests_total[5m])",
-            "legendFormat": "{{method}} {{endpoint}}"
-          }
-        ]
-      },
-      {
-        "title": "Latencia P95",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
-            "legendFormat": "P95 Latency"
-          }
-        ]
-      }
-    ]
-  }
+  "overall_status": "healthy",
+  "timestamp": "2024-01-15T10:00:00Z",
+  "services": {
+    "llm_provider": {
+      "status": "healthy",
+      "response_time_ms": 150
+    },
+    "redis": {
+      "status": "healthy", 
+      "response_time_ms": 5
+    }
+  },
+  "version": "1.0.0"
 }
 ```
 
-### Alertas
-
-#### Reglas de Prometheus
-
-```yaml
-# monitoring/alerts.yml
-groups:
-- name: llm-resumen-alerts
-  rules:
-  - alert: HighErrorRate
-    expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
-    for: 2m
-    labels:
-      severity: critical
-    annotations:
-      summary: "Alta tasa de errores en LLM Resumen API"
-      description: "La tasa de errores 5xx es {{ $value }} por segundo"
-
-  - alert: HighLatency
-    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
-    for: 5m
-    labels:
-      severity: warning
-    annotations:
-      summary: "Alta latencia en LLM Resumen API"
-      description: "El percentil 95 de latencia es {{ $value }} segundos"
-```
-
-## Estrategias de Rollback
-
-### Rollback Automático
+### Script de Monitoreo Simple
 
 ```bash
-# Script de rollback
 #!/bin/bash
-# scripts/rollback.sh
+# scripts/monitor.sh
 
-PREVIOUS_VERSION=$1
-if [ -z "$PREVIOUS_VERSION" ]; then
-    echo "Uso: $0 <versión_anterior>"
+echo "🔍 Verificando estado del servicio..."
+
+# Verificar salud
+if curl -f http://localhost:8000/v1/healthz > /dev/null 2>&1; then
+    echo "✅ Servicio saludable"
+else
+    echo "❌ Servicio no responde"
     exit 1
 fi
 
-echo "Ejecutando rollback a versión $PREVIOUS_VERSION..."
+# Verificar uso de recursos
+echo "📊 Uso de recursos:"
+docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
 
-# Rollback en Kubernetes
-kubectl rollout undo deployment/llm-resumen-api -n llm-resumen
+# Verificar logs recientes
+echo "📝 Logs recientes:"
+docker-compose logs --tail=10 api
+```
 
-# Rollback en Docker Compose
+### Configurar Alertas Básicas
+
+Para recibir alertas cuando el servicio esté caído:
+
+```bash
+#!/bin/bash
+# scripts/health-check.sh
+
+# Verificar salud cada 5 minutos
+while true; do
+    if ! curl -f http://localhost:8000/v1/healthz > /dev/null 2>&1; then
+        echo "ALERTA: Servicio no responde - $(date)"
+        # Aquí puedes agregar notificaciones por email, Slack, etc.
+    fi
+    sleep 300  # 5 minutos
+done
+```
+
+## Rollback y Recuperación
+
+### Rollback Simple
+
+Si necesitas volver a una versión anterior:
+
+```bash
+#!/bin/bash
+# scripts/rollback.sh
+
+echo "🔄 Ejecutando rollback..."
+
+# Detener servicios actuales
 docker-compose -f docker-compose.prod.yml down
+
+# Volver a imagen anterior (si tienes tags de versión)
+docker-compose -f docker-compose.prod.yml pull
 docker-compose -f docker-compose.prod.yml up -d
 
-echo "Rollback completado ✓"
+# Verificar que funcione
+sleep 10
+if curl -f http://localhost:8000/v1/healthz > /dev/null 2>&1; then
+    echo "✅ Rollback exitoso"
+else
+    echo "❌ Error en rollback"
+    exit 1
+fi
 ```
 
 ### Verificación Post-Despliegue
 
 ```bash
 #!/bin/bash
-# scripts/post-deploy-check.sh
+# scripts/verify-deployment.sh
 
-echo "Verificando despliegue..."
+echo "🔍 Verificando despliegue..."
 
-# Verificar salud del servicio
-curl -f http://localhost:8000/v1/healthz || {
-    echo "ERROR: Servicio no saludable"
+# Verificar salud
+if curl -f http://localhost:8000/v1/healthz > /dev/null 2>&1; then
+    echo "✅ Servicio saludable"
+else
+    echo "❌ Servicio no responde"
     exit 1
-}
-
-# Verificar métricas básicas
-RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:8000/v1/healthz)
-if (( $(echo "$RESPONSE_TIME > 5.0" | bc -l) )); then
-    echo "ADVERTENCIA: Tiempo de respuesta alto: ${RESPONSE_TIME}s"
 fi
+
+# Verificar tiempo de respuesta
+RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:8000/v1/healthz)
+echo "⏱️ Tiempo de respuesta: ${RESPONSE_TIME}s"
 
 # Verificar logs de errores
 ERROR_COUNT=$(docker-compose logs api | grep -c "ERROR" || echo "0")
-if [ "$ERROR_COUNT" -gt 10 ]; then
-    echo "ADVERTENCIA: Muchos errores en logs: $ERROR_COUNT"
+if [ "$ERROR_COUNT" -gt 5 ]; then
+    echo "⚠️ Advertencia: $ERROR_COUNT errores en logs"
 fi
 
-echo "Verificación completada ✓"
+echo "✅ Verificación completada"
 ```
 
 ## Mejores Prácticas
