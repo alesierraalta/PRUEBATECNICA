@@ -79,13 +79,13 @@ Hay muchas maneras de contribuir al proyecto:
    ```bash
    # En GitHub, hacer fork del repositorio
    # Luego clonar tu fork localmente
-   git clone https://github.com/tu-usuario/microservicio-resumen-llm.git
-   cd microservicio-resumen-llm
+git clone https://github.com/alesierraalta/PRUEBATECNICA.git
+cd PRUEBATECNICA
    ```
 
 2. **Configurar Remote Upstream**
    ```bash
-   git remote add upstream https://github.com/original-repo/microservicio-resumen-llm.git
+   git remote add upstream https://github.com/alesierraalta/PRUEBATECNICA.git
    ```
 
 3. **Crear Entorno Virtual**
@@ -526,7 +526,7 @@ Cualquier otro contexto sobre la solicitud.
 
 Gracias a todos los contribuidores que han ayudado a hacer este proyecto mejor:
 
-- [Lista de contribuidores](https://github.com/tuusuario/microservicio-resumen-llm/graphs/contributors)
+- [Lista de contribuidores](https://github.com/alesierraalta/PRUEBATECNICA/graphs/contributors)
 
 ### Agradecimientos Especiales
 
@@ -541,9 +541,9 @@ Al contribuir a este proyecto, aceptas que tus contribuciones serán licenciadas
 ## Contacto
 
 - **Mantenedor Principal**: [Tu Nombre](mailto:tu-email@ejemplo.com)
-- **Proyecto**: [GitHub Repository](https://github.com/tuusuario/microservicio-resumen-llm)
-- **Issues**: [GitHub Issues](https://github.com/tuusuario/microservicio-resumen-llm/issues)
-- **Discusiones**: [GitHub Discussions](https://github.com/tuusuario/microservicio-resumen-llm/discussions)
+- **Proyecto**: [GitHub Repository](https://github.com/alesierraalta/PRUEBATECNICA)
+- **Issues**: [GitHub Issues](https://github.com/alesierraalta/PRUEBATECNICA/issues)
+- **Discusiones**: [GitHub Discussions](https://github.com/alesierraalta/PRUEBATECNICA/discussions)
 
 ---
 

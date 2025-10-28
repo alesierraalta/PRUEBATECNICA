@@ -584,8 +584,8 @@ docker-compose exec redis redis-cli monitor
 ### Recursos de Ayuda
 
 - **Documentación**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/tuusuario/microservicio-resumen-llm/issues)
-- **Discusiones**: [GitHub Discussions](https://github.com/tuusuario/microservicio-resumen-llm/discussions)
+- **Issues**: [GitHub Issues](https://github.com/alesierraalta/PRUEBATECNICA/issues)
+- **Discusiones**: [GitHub Discussions](https://github.com/alesierraalta/PRUEBATECNICA/discussions)
 
 ### Información para Reportar Problemas
 

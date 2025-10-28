@@ -228,6 +228,6 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](L
 ## Contacto
 
 - **Mantenedor**: [Tu Nombre](mailto:tu-email@ejemplo.com)
-- **Proyecto**: [GitHub Repository](https://github.com/tuusuario/microservicio-resumen-llm)
-- **Issues**: [GitHub Issues](https://github.com/tuusuario/microservicio-resumen-llm/issues)
-- **Discusiones**: [GitHub Discussions](https://github.com/tuusuario/microservicio-resumen-llm/discussions)
+- **Proyecto**: [GitHub Repository](https://github.com/alesierraalta/PRUEBATECNICA)
+- **Issues**: [GitHub Issues](https://github.com/alesierraalta/PRUEBATECNICA/issues)
+- **Discusiones**: [GitHub Discussions](https://github.com/alesierraalta/PRUEBATECNICA/discussions)

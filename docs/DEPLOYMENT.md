@@ -31,8 +31,8 @@ Esta guía proporciona instrucciones detalladas para desplegar el Microservicio 
 
 1. **Clonar el repositorio**
    ```bash
-   git clone https://github.com/tuusuario/microservicio-resumen-llm.git
-   cd microservicio-resumen-llm
+git clone https://github.com/alesierraalta/PRUEBATECNICA.git
+cd PRUEBATECNICA
    ```
 
 2. **Configurar variables de entorno**
@@ -230,8 +230,8 @@ Para desplegar en un servidor VPS (DigitalOcean, Linode, AWS EC2, etc.):
 
 2. **Clonar y configurar**
    ```bash
-   git clone https://github.com/tuusuario/microservicio-resumen-llm.git
-   cd microservicio-resumen-llm
+git clone https://github.com/alesierraalta/PRUEBATECNICA.git
+cd PRUEBATECNICA
    
    # Configurar variables de entorno
    cp env.production .env.production
