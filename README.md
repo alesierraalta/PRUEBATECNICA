@@ -4,7 +4,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-green.svg)](https://fastapi.tiangolo.com)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Code Style](https://img.shields.io/badge/Code%20Style-Black-black.svg)](https://github.com/psf/black)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black.svg)](https://github.com/alesierraalta/PRUEBATECNICA)
 
 Un microservicio de alto rendimiento y listo para producción para resumen inteligente de texto usando modelos de IA avanzados. Construido con FastAPI, incluye manejo integral de errores, caché, limitación de velocidad y mecanismos de respaldo automático.
 
@@ -31,8 +31,8 @@ Un microservicio de alto rendimiento y listo para producción para resumen intel
 
 1. **Clonar el repositorio**
    ```bash
-   git clone https://github.com/tuusuario/microservicio-resumen-llm.git
-   cd microservicio-resumen-llm
+   git clone https://github.com/alesierraalta/PRUEBATECNICA.git
+   cd PRUEBATECNICA
    ```
 
 2. **Configurar variables de entorno**
@@ -421,3 +421,14 @@ docker-compose logs -f api
 # Con marcas de tiempo
 docker-compose logs -f -t api
 ```
+
+## 📞 Soporte
+
+- **Documentación**: [docs/](docs/)
+- **Issues**: [GitHub Issues](https://github.com/alesierraalta/PRUEBATECNICA/issues)
+- **Discusiones**: [GitHub Discussions](https://github.com/alesierraalta/PRUEBATECNICA/discussions)
+- **Repositorio**: [GitHub Repository](https://github.com/alesierraalta/PRUEBATECNICA)
+
+---
+
+**Hecho con ❤️ para resumen inteligente de texto**
